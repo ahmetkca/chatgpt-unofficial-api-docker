@@ -46,11 +46,13 @@ RUN set -ex \
 
 RUN pip install --upgrade pip
 
-COPY --chown=user:user ./requirements.txt /home/python-user/app/requirements.txt
+# COPY --chown=user:user ./requirements.txt /home/python-user/app/requirements.txt
+COPY ./requirements.txt /home/python-user/app/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /home/python-user/app/requirements.txt
 
-COPY --chown=user:user ./app /home/python-user/app
+# COPY --chown=user:user ./app /home/python-user/app
+COPY ./app /home/python-user/app
 
 # RUN apt-get install -y git build-essential
 
