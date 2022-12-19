@@ -9,7 +9,7 @@ services:
       - 8080:8080
     env_file:
       - .env
-    volumes:
-      - ./app:/home/python-user/app
+    # volumes:
+    #   - ./app:/home/python-user/app
     stdin_open: true
     tty: true
