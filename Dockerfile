@@ -26,7 +26,7 @@ RUN apt-get update \
 
 RUN groupadd -r python-user && useradd -r -m -g python-user python-user
 
-USER python-user
+# USER python-user
 
 ENV PYTHON_VERSION 3.10.0
 
