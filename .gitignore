@@ -1,0 +1,12 @@
+.python-version
+/.vscode/
+/docker-tightvnc/
+/temp/
+/supervisord/
+/Python-Tls-Client/
+/tls_client/
+.env
+__pycache__
+/test-pyenv-in-docker/
+demo.py
+heroku-app
