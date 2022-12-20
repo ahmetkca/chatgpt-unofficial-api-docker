@@ -9,3 +9,4 @@ __pycache__
 /test-pyenv-in-docker/
 demo.py
 heroku-app
+/docker-novnc/
