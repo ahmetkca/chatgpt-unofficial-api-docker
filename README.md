@@ -4,6 +4,8 @@ You must have docker or podman to be able to run this repo.
 
 There is a docker-compose file that will build a docker image with all the dependencies and run it.
 
+You can use `http://localhost:8080/docs` to test the API or you can use postman.
+
 _*(Optional)*_ There is also a postman collection that you can use to test the API.
 
 Create a `.env` file with the following content:
@@ -18,6 +20,7 @@ echo "PASSWORD=<your openai account password>" >> .env
 ```
 
 ## How to run
+---
 
 ```bash
 docker compose up --build
@@ -40,6 +43,7 @@ For some reason sometimes the noVNC UI does not load properly, if that happens t
 ![noVNC UI](media/novnc04.png)
 
 ## How to use
+---
 
 _**(Optional)**_ Open postman and import the collection from `postman_collection.json`
 ![postman](media/postman01.png)
@@ -110,3 +114,13 @@ Response will be as follows:
 
 ### _*Note:*_ 
 It does not stream the response, it waits until the response is ready and then returns it since we are using tls-client instead of httpx or requests becuse of the tls fingerprinting issue with other http clients.
+
+## Demo
+---
+
+<div style="margin:auto;position:relative;width:fit-content;height:fit-content;">
+            <a style="position:absolute;top:20px;right:1rem;opacity:0.8;" href="https://clipchamp.com/watch/FJGH6Rbtm4S?utm_source=embed&utm_medium=embed&utm_campaign=watch">
+                <img style="height:22px;" src="https://clipchamp.com/e.svg" alt="Made with Clipchamp" />
+            </a>
+            <iframe allow="autoplay;" allowfullscreen style="border:none" src="https://clipchamp.com/watch/FJGH6Rbtm4S/embed" width="640" height="360"></iframe>
+        </div>
