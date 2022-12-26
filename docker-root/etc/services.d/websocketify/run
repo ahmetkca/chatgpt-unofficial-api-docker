@@ -1,0 +1,2 @@
+#!/usr/bin/with-contenv bash
+sudo -Hu user /app/src/websockify/run 9001 127.0.0.1:5911

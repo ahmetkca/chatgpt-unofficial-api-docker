@@ -1,0 +1,2 @@
+#!/usr/bin/with-contenv bash
+sudo -Hu user /usr/bin/vncserver :11 -fg -geometry $VNC_GEOMETRY -depth 24
