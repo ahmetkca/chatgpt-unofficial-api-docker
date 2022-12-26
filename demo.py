@@ -10,6 +10,10 @@ from rich.markdown import Markdown
 logging.basicConfig(level=logging.INFO)
 console = Console()
 
+BASE_URL = "http://localhost"
+CONVERSATION_ENDPOINT = "/backend-api/conversation"
+PORT = 8080
+
 
 def prepare_payload(
     message,
@@ -58,7 +62,7 @@ def send_message(message, conversation_id=None, parent_message_id=None):
         spinner_style="bold green",
     ) as _status:
         response = httpx.post(
-            "http://localhost:8080/backend-api/conversation",
+                BASE_URL + ":" + str(PORT) + CONVERSATION_ENDPOINT ,
             json=prepare_payload(message, conversation_id, parent_message_id),
             timeout=None,
         )
@@ -92,14 +96,14 @@ if __name__ == "__main__":
         "Hello, Assistant!", conversation_id, parent_message_id
     )
 
-    time.sleep(1)
+    time.sleep(3)
     conversation_id, parent_message_id = send_message(
         "What is the difference between functional and procedural programming languages?",
         conversation_id,
         parent_message_id,
     )
 
-    time.sleep(1)
+    time.sleep(3)
     conversation_id, parent_message_id = send_message(
         "Write a program to print the first 10 natural numbers.",
         conversation_id,
