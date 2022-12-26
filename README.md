@@ -115,4 +115,4 @@ It does not stream the response, it waits until the response is ready and then r
 
 ## Demo
 
-<video style="margin:auto;" src="media/docker-chatgpt01.mp4" controls preload></video>
+https://user-images.githubusercontent.com/74574469/209511565-769ee2a9-b7e3-46bf-81b4-1aee1aff5d19.mp4
