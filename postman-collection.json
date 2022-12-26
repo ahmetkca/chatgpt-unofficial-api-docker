@@ -1,0 +1,123 @@
+{
+	"info": {
+		"_postman_id": "25b61d9d-8d77-4a4f-bdd5-0e97e2922906",
+		"name": "New Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "13934326"
+	},
+	"item": [
+		{
+			"name": "login chatgpt",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "reset wait",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/reset-wait",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"reset-wait"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get cookies",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "conversation",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"action\": \"next\",\r\n    \"messages\": [\r\n        {\r\n            \"id\": \"da4b829a-660f-4a4f-87c9-e638f4b4c344\",\r\n            \"role\": \"user\",\r\n            \"content\": {\r\n                \"content_type\": \"text\",\r\n                \"parts\": [\r\n                    \"Hello, Assistant! Explain what a Blackhole is like a Einstein\"\r\n                ]\r\n            }\r\n        }\r\n    ],\r\n    \"parent_message_id\": \"06ef2c59-cd65-4df9-a5d5-911d18925b18\",\r\n    \"model\": \"text-davinci-002-render\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/backend-api/conversation",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"backend-api",
+						"conversation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get access token",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/access-token",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"access-token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "refresh access token",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/refresh-access-token",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"refresh-access-token"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
