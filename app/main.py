@@ -1,11 +1,14 @@
 import json
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import undetected_chromedriver as uc
 import time
 import logging
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+
+# from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,16 +37,17 @@ def sleep(seconds: int = 1):
     time.sleep(seconds)
 
 
-driver = uc.Chrome(
-    version_main=108,
-    no_sandbox=True,
-    disable_gpu=False,
-    keep_alive=True,
-    headless=False,
-    suppress_welcome=True,
-)
-parent_window_handle = driver.current_window_handle
-driver.implicitly_wait(15)
+# driver = uc.Chrome(
+#     version_main=108,
+#     no_sandbox=True,
+#     disable_gpu=False,
+#     keep_alive=True,
+#     headless=False,
+#     suppress_welcome=True,
+# )
+# parent_window_handle = driver.current_window_handle
+# # driver.close()
+# driver.implicitly_wait(15)
 
 is_logged_in = False
 is_wait = False
@@ -62,128 +66,143 @@ async def wait() -> bool:
     return is_wait
 
 
-def close_all_windows_except_parent():
-    for handle in driver.window_handles:
-        if handle != parent_window_handle:
-            driver.switch_to.window(handle)
-            driver.close()
+# def close_all_windows_except_parent():
+#     for handle in driver.window_handles:
+#         if handle != parent_window_handle:
+#             driver.switch_to.window(handle)
+#             driver.close()
 
 
-def create_new_window_and_switch_to_it() -> bool:
-    driver.window_new()
-    for handle in driver.window_handles:
-        if handle != parent_window_handle:
-            driver.switch_to.window(handle)
-            return True
-    return False
+# def create_new_window_and_switch_to_it() -> Tuple[bool, str]:
+#     driver.window_new()
+#     for handle in driver.window_handles:
+#         if handle != parent_window_handle:
+#             driver.switch_to.window(handle)
+#             return (True, handle)
+#     return (False, None)
 
 
-async def manual_login():
-    close_all_windows_except_parent()
-    assert create_new_window_and_switch_to_it() == True
-    recaptcha = None
-    wait_result = await wait()
-    assert wait_result == False
-    
-    cookies_ = driver.get_cookies()
+# async def manual_login():
+#     # close_all_windows_except_parent()
+#     assert create_new_window_and_switch_to_it() == True
+#     recaptcha = None
+#     wait_result = await wait()
+#     assert wait_result == False
 
-    # TODO: Check if cookies are valid.
-    
+#     cookies_ = driver.get_cookies()
+
+# TODO: Check if cookies are valid.
+
 
 async def login():
-    close_all_windows_except_parent()
-    assert create_new_window_and_switch_to_it() == True
-    driver.delete_all_cookies()
-    print(driver.current_window_handle)
+    cookies_ = None
+    with uc.Chrome(
+        version_main=108,
+        no_sandbox=True,
+        disable_gpu=False,
+        keep_alive=True,
+        headless=False,
+        suppress_welcome=True,
+    ) as driver:
+        sleep(3)
+        # close_all_windows_except_parent()
+        # ret = create_new_window_and_switch_to_it()
+        # assert ret[0] == True
+        # current_window_handle = ret[1]
 
-    logging.info("Driver started")
-    driver.get("https://chat.openai.com/auth/login")
-    try:
-        print("SESSION_ID: " + str(driver.session_id))
-    except:
-        logging.error("Session ID not found")
+        driver.delete_all_cookies()
+        logging.info("Driver started")
+        driver.get("https://chat.openai.com/auth/login")
+        print(driver.current_window_handle)
 
-    logging.info("Waiting cloudflare, 15 seconds")
-    time.sleep(15)
-    loginBtn = None
-    try:
-        loginBtn = driver.find_element(By.CSS_SELECTOR, "button.btn:nth-child(1)")
-    except NoSuchElementException:
+        assert len(driver.window_handles) == 1
+
+        try:
+            print("SESSION_ID: " + str(driver.session_id))
+        except:
+            logging.error("Session ID not found")
+
+        logging.info("Waiting cloudflare, 15 seconds")
+        time.sleep(15)
         loginBtn = None
-    if loginBtn and loginBtn.is_displayed() and loginBtn.is_enabled():
-        logging.info("Login button found")
-        loginBtn.click()
-        print(driver.current_url)
-        time.sleep(10)
-        print(driver.current_url)
-    else:
-        logging.error("Login button not found")
-    logging.info("Waiting for login, 5 seconds")
-    time.sleep(5)
-    usernameInput = driver.find_element(By.ID, "username")
-    if usernameInput:
-        usernameInput.send_keys(EMAIL)
-    else:
-        logging.error("Username input not found")
-    sleep(1)
-    recaptcha = None
-    wait_result = await wait()
-    assert wait_result == False
-    # input("reCAPTCHA found, Human verification required, press enter to continue...")
-    try:
-        recaptcha = driver.find_element(
-            By.XPATH, "/html/body/main/section/div/div/div/form/div[1]/div/div[2]"
-        )
-        if recaptcha:
-            logging.info("reCAPTCHA found")
-    except:
-        logging.info("No reCAPTCHA found")
-        recaptcha = None
-
-    continueBtn = None
-    try:
-        continueBtn = driver.find_element(
-            By.XPATH, "/html/body/main/section/div/div/div/form/div[2]/button"
-        )
-    except:
-        logging.error("Continue button not found")
-        continueBtn = None
-    if continueBtn:
-        continueBtn.click()
-    else:
-        logging.error("Continue button not found")
-
-    sleep(3)
-
-    passwordInput = find_element(driver, By.ID, "password")
-    if passwordInput:
-        passwordInput.send_keys(PASSWORD)
-
-    sleep(3)
-    lastContinueBtn = find_element(
-        driver, By.XPATH, "/html/body/main/section/div/div/div/form/div[2]/button"
-    )
-    if lastContinueBtn:
+        try:
+            loginBtn = driver.find_element(
+                By.XPATH, '//*[@id="__next"]/div/div/div[4]/button[1]'
+            )
+        except NoSuchElementException:
+            loginBtn = None
+        if loginBtn and loginBtn.is_displayed() and loginBtn.is_enabled():
+            logging.info("Login button found")
+            loginBtn.click()
+            print(driver.current_url)
+            time.sleep(10)
+            print(driver.current_url)
+        else:
+            logging.error("Login button not found")
+        logging.info("Waiting for login, 5 seconds")
+        time.sleep(5)
+        usernameInput = driver.find_element(By.ID, "username")
+        if usernameInput:
+            usernameInput.send_keys(EMAIL)
+        else:
+            logging.error("Username input not found")
         sleep(1)
-        lastContinueBtn.click()
+        recaptcha = None
+        wait_result = await wait()
+        assert wait_result == False
+        # input("reCAPTCHA found, Human verification required, press enter to continue...")
+        try:
+            recaptcha = driver.find_element(
+                By.XPATH, "/html/body/main/section/div/div/div/form/div[1]/div/div[2]"
+            )
+            if recaptcha:
+                logging.info("reCAPTCHA found")
+        except:
+            logging.info("No reCAPTCHA found")
+            recaptcha = None
 
-    sleep(5)
+        continueBtn = None
+        try:
+            continueBtn = driver.find_element(
+                By.XPATH, "/html/body/main/section/div/div/div/form/div[2]/button"
+            )
+        except:
+            logging.error("Continue button not found")
+            continueBtn = None
+        if continueBtn:
+            continueBtn.click()
+        else:
+            logging.error("Continue button not found")
 
-    logging.info("#==============================#")
+        sleep(3)
 
-    logging.info("Cookies: ")
-    logging.info(driver.get_cookies())
+        passwordInput = find_element(driver, By.ID, "password")
+        if passwordInput:
+            passwordInput.send_keys(PASSWORD)
 
-    logging.info(driver.current_url)
+        sleep(3)
+        lastContinueBtn = find_element(
+            driver, By.XPATH, "/html/body/main/section/div/div/div/form/div[2]/button"
+        )
+        if lastContinueBtn:
+            sleep(1)
+            lastContinueBtn.click()
 
-    print("SESSION_ID: " + str(driver.session_id))
+        sleep(5)
 
-    logging.info("#==============================#")
+        logging.info("#==============================#")
 
-    cookies_ = driver.get_cookies()
-    # driver.quit()
+        logging.info("Cookies: ")
+        logging.info(driver.get_cookies())
+
+        logging.info(driver.current_url)
+
+        print("SESSION_ID: " + str(driver.session_id))
+
+        logging.info("#==============================#")
+
+        cookies_ = driver.get_cookies()
     return cookies_
-
 
 from chatgpt import post_conversation, Conversation, get_access_token
 from fastapi import FastAPI, Response, status
@@ -211,6 +230,15 @@ async def read_login():
         logging.info(cookie)
     logging.info("Access token: ")
     logging.info(access_token)
+
+
+@app.post("/reset-auth-session")
+async def reset_auth_session():
+    global cookies
+    global access_token
+    cookies = None
+    access_token = None
+    return {"status": "success"}
 
 
 @app.get("/cookies")

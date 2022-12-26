@@ -2,7 +2,6 @@ version: '3.7'
 
 services:
   chatgpt:
-    image: ahmetkca/novnc:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,6 +12,6 @@ services:
     env_file:
       - .env
     volumes:
-      - ./app:/home/python-user/app
-    stdin_open: true
-    tty: true
+      - ./app:/home/user/api
+    # stdin_open: true
+    # tty: true

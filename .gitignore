@@ -10,3 +10,5 @@ __pycache__
 /test-pyenv-in-docker/
 heroku-app
 /docker-novnc/
+/backup/
+/docker-s6overlay-demo/

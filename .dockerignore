@@ -10,3 +10,5 @@ __pycache__
 demo.py
 heroku-app
 /docker-novnc/
+/backup/
+/docker-s6overlay-demo/
