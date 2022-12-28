@@ -17,6 +17,7 @@ echo "VNC_PASSWD=<your vnc password>" >> .env
 echo "USER_PASSWD=<container's user password>" >> .env
 echo "EMAIL=<your openai account email>" >> .env
 echo "PASSWORD=<your openai account password>" >> .env
+echo "CHATGPT_API_SERVER=chatgpt-api-server-link:8080" >> .env
 ```
 
 ## How to run
@@ -46,19 +47,23 @@ For some reason sometimes the noVNC UI does not load properly, if that happens t
 _**(Optional)**_ Open postman and import the collection from `postman_collection.json`
 ![postman](media/postman01.png)
 
-You can also use `http://localhost:8080/docs` to test the API
+1. You can also use `http://localhost:8080/docs` to test the API
 
-Make a request to `http://localhost:8080/login`, it will open a browser window to login to openai.
+2. Make a request to `http://localhost:8080/login`, it will open a browser window to login to openai.
 
-Wait until it enters the email (it will wait for you to solve the captcha if there is one)
+3. Wait until it enters the email (it will wait for you to solve the captcha if there is one)
 
-Head to the browser window in the noVNC (`http://localhost:9000`) and solve the captcha.
+4. Head to the browser window in the noVNC (`http://localhost:9000`) and solve the captcha.
 
-After you solve the captcha make a request to `http://localhost:8080/reset-wait` to continue the login process.
+5. After you solve the captcha make a request to `http://localhost:8080/reset-wait` to continue the login process.
 
-After you login you can make a request to `http://localhost:8080/cookies` and `http://localhost:8080/access-token` to make sure you are logged in.
+   - _At the end of the login process it will try to create a websocket connection with the ChatGPT-API-server._
+   - You can check the logs of the ChatGPT-API-server to see if the connection was successful.
+   - You can then use ChatGPT-API-server `/api/ask` endpoint to make requests to the ChatGPT model.
 
-Now you can make a request to `http://localhost:8080/backend-api/conversation` with the same payload you would  make to openai's api.
+1. After you login you can make a request to `http://localhost:8080/cookies` and `http://localhost:8080/access-token` to make sure you are logged in.
+
+2. Now you can make a request to `http://localhost:8080/backend-api/conversation` with the same payload you would  make to openai's api.
 
 ```json
 {

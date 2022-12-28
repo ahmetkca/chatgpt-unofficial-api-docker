@@ -1,5 +1,6 @@
 import json
 from typing import List, Optional, Tuple
+import uuid
 import undetected_chromedriver as uc
 import time
 import logging
@@ -19,6 +20,7 @@ import os
 
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
+CHATGPT_API_SERVER_URI=os.getenv("CHATGPT_API_SERVER", 'localhost:8080')
 
 if not EMAIL or not PASSWORD:
     raise Exception("EMAIL or PASSWORD not set")
@@ -92,6 +94,8 @@ async def wait() -> bool:
 #     cookies_ = driver.get_cookies()
 
 # TODO: Check if cookies are valid.
+
+import websockets
 
 
 async def login():
@@ -204,17 +208,237 @@ async def login():
         cookies_ = driver.get_cookies()
     return cookies_
 
-from chatgpt import post_conversation, Conversation, get_access_token
-from fastapi import FastAPI, Response, status
+from chatgpt import ConversationMessages, ConversationMessagesContent, post_conversation, Conversation, get_access_token
+from fastapi import BackgroundTasks, FastAPI, Response, status
 
 app = FastAPI()
 
 cookies: Optional[List[dict[str, str]]] = None
 access_token: Optional[str] = None
 
+wsapp = None
+
+
+# import logging
+# wsLogger = logging.getLogger('websockets')
+# wsLogger.setLevel(logging.DEBUG)
+# wsLogger.addHandler(logging.StreamHandler())
+
+import websocket
+
+connectionId = None
+
+def handleConnectionId(ws, data):
+    logging.info("handleConnectionId")
+    logging.info(data)
+    global connectionId
+    if connectionId:
+        ws.send(json.dumps({
+            "id": connectionId,
+            "message": "Connection id",
+            "data": "",
+        }))
+        return
+    if data.get("id"):
+        connectionId = data["id"]
+        ws.send(json.dumps({
+            "id": connectionId,
+            "message": "Connection id",
+            "data": "",
+        }))
+        return
+    logging.error("Connection id not found")
+
+
+def handlePing(ws , data):
+    if data.get("id"):
+        ws.send(json.dumps({
+            "id": data["id"],
+            "message": "pong",
+            "data": "",
+        }))
+        return
+    logging.error("Connection id not found")
+
+
+def handleChatGptRequest(ws, data):
+    if not cookies:
+        logging.error("Cookies not found")
+        return
+    if not access_token:
+        logging.error("Access token not found")
+        return
+    if not data.get("id"):
+        logging.error("Connection id not found")
+        return
+    if not data.get("data"):
+        logging.error("Message not found")
+        return
+    
+    chatgptRequestPayload = json.loads(data["data"])
+    # {
+    #     "message_id": "ca7bdb17-1de2-4d8e-94fc-c5b3455f8ec4",
+    #     "conversation_id": "",
+    #     "parent_id": "225bb0f1-89d4-488a-8657-980d8b7598c2",
+    #     "content": "Hello world"
+    # }
+    logging.warning(json.dumps(chatgptRequestPayload, indent=4))
+    def synchronize_async_func(func_to_await):
+        async_resp = []
+        async def run_and_capture_result():
+            r = await func_to_await
+            async_resp.append(r)
+        loop = asyncio.new_event_loop()
+        coroutine = run_and_capture_result()
+        loop.run_until_complete(coroutine)
+        loop.close()
+        return async_resp[0]
+
+    def post_conversation_sync(conversation: Conversation):
+        return synchronize_async_func(post_conversation(conversation, cookies, access_token))
+    
+    if not chatgptRequestPayload.get("conversation_id"):
+        chatgptRequestPayload["conversation_id"] = None
+    if not chatgptRequestPayload.get("message_id"):
+        chatgptRequestPayload["message_id"] = str(uuid.uuid4())
+    if not chatgptRequestPayload.get("parent_id"):
+        chatgptRequestPayload["parent_id"] = str(uuid.uuid4())
+    convPayload = Conversation(
+        model="text-davinci-002-render",
+        action="next",
+        parent_message_id=chatgptRequestPayload.get("parent_id"),
+        conversation_id=chatgptRequestPayload.get("conversation_id"),
+        messages=[ConversationMessages(
+            role='user',
+            content=ConversationMessagesContent(
+                content_type='text',
+                parts=[chatgptRequestPayload.get('content')],
+            ),
+            id=chatgptRequestPayload['message_id'],
+        )]
+    )
+    chatgptResponse = post_conversation_sync(conversation=convPayload)
+    if not chatgptResponse:
+        logging.error("chatgptResponse is empty")
+        return
+    if chatgptResponse.status_code != 200:
+        logging.error(f"chatgptResponse status code is {chatgptResponse.status_code}")
+        return
+    resp_body: str = chatgptResponse.text
+    resp_body = resp_body.split("data:")[-2]
+    resp_body = resp_body.strip()
+    chatgptResponseJson = json.loads(resp_body)
+    logging.info(json.dumps(chatgptResponseJson, indent=4))
+    websocketPayload = {
+        "response_id": chatgptResponseJson["message"]["id"],
+        "conversation_id": chatgptResponseJson["conversation_id"],
+        "content": chatgptResponseJson["message"]["content"]["parts"][0],
+    }
+    ws.send(json.dumps({
+        "id": data["id"],
+        "message": "ChatGptResponse",
+        "data": json.dumps(websocketPayload),
+    }))
+    ...
+    # const responseData = JSON.stringify({
+    # response_id: lastElement.message.id,
+    # conversation_id: lastElement.conversation_id,
+    # content: lastElement.message.content.parts[0],
+    # });
+    # sendWebSocketMessage(
+    # ws,
+    # data.id,
+    # "ChatGptResponse",
+    # responseData
+    # );
+    
+
+def handleWebSocket(chatgpt_api_server_uri):
+    global wsapp
+    uri = ""
+    if chatgpt_api_server_uri:
+        uri = chatgpt_api_server_uri
+    if CHATGPT_API_SERVER_URI:
+        uri = CHATGPT_API_SERVER_URI
+    wsuri = f"ws://{uri}/client/register"
+    logging.info(f"Connecting to {wsuri}")
+    def on_message(wsapp, message):
+        
+        data = json.loads(message)
+        logging.info(f"Message received: {json.dumps(message, indent=4)}")
+        match data["message"]:
+            case "Connection id":
+                handleConnectionId(wsapp, data)
+            case "ping":
+                handlePing(wsapp, data)
+            case "ChatGptRequest":
+                handleChatGptRequest(wsapp, data)
+            case _:
+                logging.error("Unknown message")
+                logging.error(data)
+
+    def on_error(wsapp, error):
+        logging.error(error)
+    def on_close(wsapp):
+        logging.info("### WebSocket closed ###")
+    def on_open(wsapp):
+        logging.info("### WebSocket opened ###")
+    try:
+        wsapp = websocket.WebSocketApp(wsuri, on_message=on_message, on_open=on_open, on_error=on_error, on_close=on_close)
+        wsapp.run_forever()
+    except Exception as e:
+        logging.error(e)
+        logging.error("### WebSocket error ###")
+    finally:
+        logging.info("### WebSocket finally ###")
+        if wsapp:
+            wsapp.close()
+
+
+# def handleWebSocket(chatgpt_api_server_uri):
+#     ws = websocket.WebSocket()
+#     uri = ""
+#     if chatgpt_api_server_uri:
+#         uri = chatgpt_api_server_uri
+#     if CHATGPT_API_SERVER_URI is None:
+#         uri = CHATGPT_API_SERVER_URI
+#     wsuri = f"ws://{uri}/client/register"
+#     logging.info(f"Connecting to {wsuri}")
+#     try:
+#         ws.connect(wsuri)
+#         logging.info("Connected to websocket")
+#         data = ws.recv()
+#         data = json.loads(data)
+#         print(json.dumps(data, indent=4))
+#     except Exception as e:
+#         logging.error(e)
+#         logging.error("Failed to connect to websocket")
+#     finally:
+#         ws.close()
+#     logging.info("Websocket closed")
+
+# async def handleWebSocket(chatgpt_api_server_uri):
+#     try:
+#         uri = ""
+#         if chatgpt_api_server_uri:
+#             uri = chatgpt_api_server_uri
+#         if CHATGPT_API_SERVER_URI is None:
+#             uri = CHATGPT_API_SERVER_URI
+#         wsuri = f"ws://{uri}/client/register"
+#         logging.info(f"Connecting to {wsuri}")
+#         async with websockets.connect(wsuri) as ws:
+#             logging.info("Connected to websocket")
+#             while True:
+#                 data = await ws.recv()
+#                 data = json.loads(data)
+#                 print("Received: \n\n")
+#                 print(json.dumps(data, indent=4))
+#                 print("\n\n")
+#     except Exception as e:
+#         logging.error(e)
 
 @app.get("/login")
-async def read_login():
+async def read_login(chatgpt_api_server_uri: str, background_tasks: BackgroundTasks):
     logging.info("Login request received")
     global cookies
     global access_token
@@ -230,6 +454,20 @@ async def read_login():
         logging.info(cookie)
     logging.info("Access token: ")
     logging.info(access_token)
+    logging.info("Connecting to websocket...")
+    background_tasks.add_task(handleWebSocket, chatgpt_api_server_uri)
+    return {
+        "status": "success",
+        "cookies": cookies,
+        "access_token": access_token
+    }
+
+# testing purposes only
+@app.post("/register")
+async def register(background_tasks: BackgroundTasks):
+    background_tasks.add_task(handleWebSocket)
+    return {"status": "success"}
+
 
 
 @app.post("/reset-auth-session")
@@ -342,6 +580,14 @@ async def conversation(conversation: Conversation):
 
     return _response
 
+
+@app.on_event("shutdown")
+def shutdown_event():
+    if wsapp:
+        logging.info("Closing websocket connection")
+        wsapp.close()
+        logging.info("Websocket connection closed")
+    logging.info("Shutting down...")
 
 # import uvicorn
 
